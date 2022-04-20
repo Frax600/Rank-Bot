@@ -4,23 +4,36 @@ import json
 import httpx
 from keep_alive import keep_alive
 
-async def get_rlranks(username, message, platform, mode):
-  competitive_ranks = ["Ranked Duel 1v1", "Ranked Doubles 2v2", "Ranked Standard 3v3"]
-  extra_ranks = ["Hoops", "Rumble", "Dropshot", "Snowday"]
+platforms = ["steam", "epic", "psn", "xbl"]
+competitive_ranks = ["Ranked Duel 1v1", "Ranked Doubles 2v2", "Ranked Standard 3v3"]
+extra_ranks = ["Hoops", "Rumble", "Dropshot", "Snowday"]
+
+async def get_rlranks(username, message, platform, mode, platformid=0):
   ranks = ""
   
   clienthttp = httpx.AsyncClient(http2=True)
   try:
-    response = await clienthttp.get('https://api.tracker.gg/api/v2/rocket-league/standard/profile/' + platform + username)
+    print("Plataforma: " + platform)
+    response = await clienthttp.get('https://api.tracker.gg/api/v2/rocket-league/standard/profile/' + platform + "/" + username)
   except Exception as e:
     print(e)
-    return "Error, inténtelo de nuevo más adelante"
+    return "Error, inténtelo de nuevo más tarde"
   try:
     json_data = json.loads(response.text)
     print("---------JSON----------")
     print(json_data)
     print("--------JSONEND--------")
-  except:
+    if("errors" in json_data):
+      print("Error no encontrado")
+      print("pid:" + str(platformid))
+      platformid += 1
+      print("pid:" + str(platformid))
+      if(platformid >= len(platforms)):
+        return "No se encuentra el usuario"
+      platform = platforms[platformid]
+      return await get_rlranks(username, message, platform, mode, platformid)
+  except Exception as e:
+    print(e)
     return "No se han introducido datos"
 
   try:
@@ -54,7 +67,7 @@ async def get_rlranks(username, message, platform, mode):
     print("--------LOOP----------")
     print("Pos: " + str(pos) + "\nLoops: " + str(loops) + "\nRank List: " + str(ranklist) + "\nPlataforma: " + platform + "\nMode: " + mode)
     for i in range(loops):
-      if(json_data["data"]["segments"][1]["metadata"]["name"] == "Ranked Duel 1v1"):
+      if(json_data["data"]["segments"][1]["metadata"]["name"] != "Un-Ranked"):
         minus = 1
       if(json_data["data"]["segments"][pos - minus]["metadata"]["name"] in ranklist):
         print("******dentro de la lista******")
@@ -70,17 +83,10 @@ async def get_rlranks(username, message, platform, mode):
     if(ranks == ""):
        raise Exception("No se encuentra el usuario")
     else:
-      ranks = "Plataforma: " + platform[:-1] + "\n" + ranks
+      ranks = "Plataforma: " + platform + "\n" + ranks
     return ranks
   except:
-    if(platform == "steam/"):
-      platform = "epic/"
-      return await get_rlranks(username, message, platform, mode)
-    else:
-      if("errors" in json_data):
-        return "No se encuentra el usuario"
-      else:
-        return "No se encontraron datos de estos modos"
+      return "No existen datos para estos modos de juego"
 
 
 client = discord.Client()
@@ -100,7 +106,7 @@ async def on_message(message):
   if msg.startswith("!ranks(") and msg.endswith(")"):
     lenght = len(msg)
     username = msg[7:lenght-1]
-    platform = "steam/"
+    platform = platforms[0]
     mode = "competitive"
     ranks = await get_rlranks(username, message, platform, mode)
     await message.channel.send(ranks)
@@ -108,7 +114,7 @@ async def on_message(message):
   if msg.startswith("!extra(") and msg.endswith(")"):
     lenght = len(msg)
     username = msg[7:lenght-1]
-    platform = "steam/"
+    platform = platforms[0]
     mode = "extra"
     ranks = await get_rlranks(username, message, platform, mode)
     await message.channel.send(ranks)
