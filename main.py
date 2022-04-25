@@ -14,13 +14,13 @@ async def get_rlranks(username, message, platform, mode):
   ranks = ""
 
   # Platform is selected
-  if(platform == "s"):
+  if(platform == "m"):
     platform = "steam"
-  elif(platform == "e"):
+  elif(platform == "c"):
     platform = "epic"
-  elif(platform == "p"):
+  elif(platform == "n"):
     platform = "psn"
-  elif(platform == "x"):
+  elif(platform == "l"):
     platform = "xbl"
   
   clienthttp = httpx.AsyncClient(http2=True)
@@ -172,6 +172,8 @@ async def get_all_rlranks(username, message, platform, platformid=0):
         return ranks
     else:
       return ranks
+
+prueba = "^!ranks\(\w*\) (steam|epic|psn|xbl)$"
   """
 
 client = discord.Client()
@@ -188,26 +190,30 @@ async def on_message(message):
   if msg.startswith("!hola"):
     await msg.send("¡Qué pasa manco!")
 
-  if re.search("^![sepx]ranks\(\w*\)$", msg):
-    lenght = len(msg)
-    username = msg[8:lenght-1]
-    platform = msg[1:2]
+  if re.search("^!ranks \w+.* (steam|epic|psn|xbl)$", msg):
+    startname = msg.index(" ") + 1
+    endname = msg.rindex(" ")
+    username = msg[startname:endname]
+    print("Username: " + username)
+    platform = msg[-1]
     mode = "competitive"
     ranks = await get_rlranks(username, message, platform, mode)
     await message.channel.send(ranks)
 
-  if re.search("^![sepx]extra\(\w*\)$", msg):
-    lenght = len(msg)
-    username = msg[8:lenght-1]
-    platform = msg[1:2]
+  if re.search("^!extra \w+.* (steam|epic|psn|xbl)$", msg):
+    startname = msg.index(" ") + 1
+    endname = msg.rindex(" ")
+    username = msg[startname:endname]
+    platform = msg[-1]
     mode = "extra"
     ranks = await get_rlranks(username, message, platform, mode)
     await message.channel.send(ranks)
 
-  if re.search("^![sepx]allranks\(\w*\)$", msg):
-    lenght = len(msg)
-    username = msg[11:lenght-1]
-    platform = msg[1:2]
+  if re.search("^!allranks \w+.* (steam|epic|psn|xbl)$", msg):
+    startname = msg.index(" ") + 1
+    endname = msg.rindex(" ")
+    username = msg[startname:endname]
+    platform = msg[-1]
     ranks = await get_all_rlranks(username, message, platform)
     await message.channel.send(ranks)
     
