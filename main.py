@@ -2,6 +2,7 @@ import discord
 import os
 import json
 import httpx
+import re
 from keep_alive import keep_alive
 
 platforms = ["steam", "epic", "psn", "xbl"]
@@ -9,8 +10,18 @@ competitive_ranks = ["Ranked Duel 1v1", "Ranked Doubles 2v2", "Ranked Standard 3
 extra_ranks = ["Hoops", "Rumble", "Dropshot", "Snowday"]
 error_messages = ["Error, inténtelo de nuevo más tarde", "No se encuentra el usuario", "No se han introducido datos"]
 
-async def get_rlranks(username, message, platform, mode, platformid=0):
+async def get_rlranks(username, message, platform, mode):
   ranks = ""
+
+  # Platform is selected
+  if(platform == "s"):
+    platform = "steam"
+  elif(platform == "e"):
+    platform = "epic"
+  elif(platform == "p"):
+    platform = "psn"
+  elif(platform == "x"):
+    platform = "xbl"
   
   clienthttp = httpx.AsyncClient(http2=True)
   try:
@@ -26,13 +37,7 @@ async def get_rlranks(username, message, platform, mode, platformid=0):
     print("--------JSONEND--------")
     if("errors" in json_data):
       print("Error no encontrado")
-      print("pid:" + str(platformid))
-      platformid += 1
-      print("pid:" + str(platformid))
-      if(platformid >= len(platforms)):
-        return "No se encuentra el usuario"
-      platform = platforms[platformid]
-      return await get_rlranks(username, message, platform, mode, platformid)
+      return "No se encuentra el usuario"
   except Exception as e:
     print(e)
     return "No se han introducido datos"
@@ -86,7 +91,6 @@ async def get_rlranks(username, message, platform, mode, platformid=0):
       ranklist = competitive_ranks
     elif(mode == "extra"):
       ranklist = extra_ranks
-
     loops = len(json_data["data"]["segments"])
     
     print("--------LOOP----------")
@@ -184,26 +188,26 @@ async def on_message(message):
   if msg.startswith("!hola"):
     await msg.send("¡Qué pasa manco!")
 
-  if msg.startswith("!ranks(") and msg.endswith(")"):
+  if re.search("^![sepx]ranks\(\w*\)$", msg):
     lenght = len(msg)
-    username = msg[7:lenght-1]
-    platform = platforms[0]
+    username = msg[8:lenght-1]
+    platform = msg[1:2]
     mode = "competitive"
     ranks = await get_rlranks(username, message, platform, mode)
     await message.channel.send(ranks)
 
-  if msg.startswith("!extra(") and msg.endswith(")"):
+  if re.search("^![sepx]extra\(\w*\)$", msg):
     lenght = len(msg)
-    username = msg[7:lenght-1]
-    platform = platforms[0]
+    username = msg[8:lenght-1]
+    platform = msg[1:2]
     mode = "extra"
     ranks = await get_rlranks(username, message, platform, mode)
     await message.channel.send(ranks)
 
-  if msg.startswith("!allranks(") and msg.endswith(")"):
+  if re.search("^![sepx]allranks\(\w*\)$", msg):
     lenght = len(msg)
-    username = msg[10:lenght-1]
-    platform = platforms[0]
+    username = msg[11:lenght-1]
+    platform = msg[1:2]
     ranks = await get_all_rlranks(username, message, platform)
     await message.channel.send(ranks)
     
