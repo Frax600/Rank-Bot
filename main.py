@@ -7,6 +7,7 @@ from keep_alive import keep_alive
 platforms = ["steam", "epic", "psn", "xbl"]
 competitive_ranks = ["Ranked Duel 1v1", "Ranked Doubles 2v2", "Ranked Standard 3v3"]
 extra_ranks = ["Hoops", "Rumble", "Dropshot", "Snowday"]
+error_messages = ["Error, inténtelo de nuevo más tarde", "No se encuentra el usuario", "No se han introducido datos"]
 
 async def get_rlranks(username, message, platform, mode, platformid=0):
   ranks = ""
@@ -40,35 +41,23 @@ async def get_rlranks(username, message, platform, mode, platformid=0):
 
     """
     minus = 0
-    if(json_data["data"]["segments"][0]["type"] == "overview"):
-      minus = 1
-    rank1v1 = json_data["data"]["segments"][2 - minus]["stats"]["tier"]["metadata"]["name"]
-    div1v1 = json_data["data"]["segments"][2 - minus]["stats"]["division"]["metadata"]["name"]
-    mmr1v1 = json_data["data"]["segments"][2 - minus]["stats"]["rating"]["value"]
-    rank2v2 = json_data["data"]["segments"][3 - minus]["stats"]["tier"]["metadata"]["name"]
-    div2v2 = json_data["data"]["segments"][3 - minus]["stats"]["division"]["metadata"]["name"]
-    mmr2v2 = json_data["data"]["segments"][3 - minus]["stats"]["rating"]["value"]
-    rank3v3 = json_data["data"]["segments"][4 - minus]["stats"]["tier"]["metadata"]["name"]
-    div3v3 = json_data["data"]["segments"][4 - minus]["stats"]["division"]["metadata"]["name"]
-    mmr3v3 = json_data["data"]["segments"][4 - minus]["stats"]["rating"]["value"]
-    ranks = "Ranked Duel 1v1: " + rank1v1 + "  " + div1v1 + "  " + str(mmr1v1) + "\nRanked Doubles 2v2: " + rank2v2 + "  " + div2v2 + "  " + str(mmr2v2) + "\nRanked Standard 3v3: " + rank3v3 + "  " + div3v3 + "  " + str(mmr3v3)
-    """
-    
-    minus = 0
     if(mode == "competitive"):
       pos = 2
-      loops = 3
       ranklist = competitive_ranks
+      loops = 3
     elif(mode == "extra"):
       pos = 5
-      loops = 4
       ranklist = extra_ranks
+      loops = 4
+    loops2 = len(json_data["data"]["segments"])
+    print("loops2: " + str(loops2))
 
     print("--------LOOP----------")
     print("Pos: " + str(pos) + "\nLoops: " + str(loops) + "\nRank List: " + str(ranklist) + "\nPlataforma: " + platform + "\nMode: " + mode)
     for i in range(loops):
       if(json_data["data"]["segments"][1]["metadata"]["name"] != "Un-Ranked"):
         minus = 1
+        print("minus: " + str(minus))
       if(json_data["data"]["segments"][pos - minus]["metadata"]["name"] in ranklist):
         print("******dentro de la lista******")
         rankname = json_data["data"]["segments"][pos - minus]["metadata"]["name"]
@@ -79,6 +68,43 @@ async def get_rlranks(username, message, platform, mode, platformid=0):
         pos += 1
         
         print(ranks)
+      else:
+        print("**********************")
+        print(json_data["data"]["segments"][pos - minus]["metadata"]["name"])
+        print("**********************")
+    print("-------LOOPEND--------")
+    if(ranks == ""):
+       raise Exception("No se encuentra el usuario")
+    else:
+      ranks = "Plataforma: " + platform + "\n" + ranks
+    return ranks
+  except:
+      return "No existen datos para estos modos de juego 1"
+    """
+
+    if(mode == "competitive"):
+      ranklist = competitive_ranks
+    elif(mode == "extra"):
+      ranklist = extra_ranks
+
+    loops = len(json_data["data"]["segments"])
+    
+    print("--------LOOP----------")
+    print("Rank List: " + str(ranklist) + "\nLoops: " + str(loops) + "\nPlataforma: " + platform + "\nMode: " + mode)
+    for i in range(loops):
+      if(json_data["data"]["segments"][i]["metadata"]["name"] in ranklist):
+        print("******dentro de la lista******")
+        rankname = json_data["data"]["segments"][i]["metadata"]["name"]
+        ranktier = json_data["data"]["segments"][i]["stats"]["tier"]["metadata"]["name"]
+        rankdiv = json_data["data"]["segments"][i]["stats"]["division"]["metadata"]["name"]
+        rankmmr = str(json_data["data"]["segments"][i]["stats"]["rating"]["value"])
+        ranks += rankname + ": " + ranktier + " " + rankdiv + " " +rankmmr + "\n"
+        
+        print(ranks)
+      else:
+        print("**********************")
+        print(json_data["data"]["segments"][i]["metadata"]["name"])
+        print("**********************")
     print("-------LOOPEND--------")
     if(ranks == ""):
        raise Exception("No se encuentra el usuario")
@@ -88,6 +114,61 @@ async def get_rlranks(username, message, platform, mode, platformid=0):
   except:
       return "No existen datos para estos modos de juego"
 
+async def get_all_rlranks(username, message, platform, platformid=0):
+  mode = "competitive"
+  rank1 = await get_rlranks(username, message, platform, mode)
+  print("-------rank1--------")
+  print(rank1)
+  if(rank1 in error_messages):
+    return rank1
+  else:
+    if(rank1 == "No existen datos para estos modos de juego"):
+      rank1 = ""
+    ranks = rank1
+  
+  mode = "extra"
+  rank2 = await get_rlranks(username, message, platform, mode)
+  print("-------rank2--------")
+  print(rank2)
+  if(rank2 in error_messages):
+    return rank2
+  else:
+    if(rank2 == "No existen datos para estos modos de juego"):
+      rank2 = ""
+    else:
+      endlinepos = rank2.index("\n")
+      rank2 = rank2[endlinepos:]
+    ranks += rank2
+    
+    if(ranks == ""):
+      return "No existen datos para estos modos de juego"
+    else:
+      return ranks
+    
+  """
+  mode = "competitive"
+  rank1 = await get_rlranks(username, message, platform, mode)
+  print("-------rank1--------")
+  print(rank1)
+  if(rank1 in error_messages):
+    return rank1
+  else:
+    ranks = rank1
+    mode = "extra"
+    rank2 = await get_rlranks(username, message, platform, mode)
+    print("-------rank2--------")
+    print(rank2)
+    if(rank2 not in error_messages):
+      if(rank2 == "No existen datos para estos modos de juego"):
+        return ranks
+      else:
+        endlinepos = rank2.index("\n")
+        rank2 = rank2[endlinepos:]
+        ranks += rank2
+        return ranks
+    else:
+      return ranks
+  """
 
 client = discord.Client()
 
@@ -117,6 +198,13 @@ async def on_message(message):
     platform = platforms[0]
     mode = "extra"
     ranks = await get_rlranks(username, message, platform, mode)
+    await message.channel.send(ranks)
+
+  if msg.startswith("!allranks(") and msg.endswith(")"):
+    lenght = len(msg)
+    username = msg[10:lenght-1]
+    platform = platforms[0]
+    ranks = await get_all_rlranks(username, message, platform)
     await message.channel.send(ranks)
     
 keep_alive()
