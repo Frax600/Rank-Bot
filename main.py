@@ -5,10 +5,12 @@ import httpx
 import re
 from keep_alive import keep_alive
 
+
+
 platforms = ["steam", "epic", "psn", "xbl"]
 competitive_ranks = ["Ranked Duel 1v1", "Ranked Doubles 2v2", "Ranked Standard 3v3"]
 extra_ranks = ["Hoops", "Rumble", "Dropshot", "Snowday"]
-error_messages = ["Error, inténtelo de nuevo más tarde", "No se encuentra el usuario", "No se han introducido datos"]
+error_messages = ["Error, inténtelo de nuevo más tarde", "No se encuentra el usuario", "No se han introducido datos", "Se ha producido un error en el servidor"]
 
 async def get_rlranks(username, message, platform, mode):
   ranks = ""
@@ -26,10 +28,14 @@ async def get_rlranks(username, message, platform, mode):
   clienthttp = httpx.AsyncClient(http2=True)
   try:
     print("Plataforma: " + platform)
-    response = await clienthttp.get('https://api.tracker.gg/api/v2/rocket-league/standard/profile/' + platform + "/" + username)
+    headers = {"Host": "api.tracker.gg", "User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:70.0) Gecko/20100101 Firefox/70.0", "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"}
+    response = await clienthttp.get('https://api.tracker.gg/api/v2/rocket-league/standard/profile/' + platform + "/" + username, headers=headers)
+    print("Version: " + response.http_version+
+         "\nError: " + str(response.status_code))
   except Exception as e:
     print(e)
     return "Error, inténtelo de nuevo más tarde"
+  print(response.text)
   try:
     json_data = json.loads(response.text)
     print("---------JSON----------")
@@ -40,7 +46,7 @@ async def get_rlranks(username, message, platform, mode):
       return "No se encuentra el usuario"
   except Exception as e:
     print(e)
-    return "No se han introducido datos"
+    return "Se ha producido un error en el servidor"
 
   try:
 
@@ -118,7 +124,7 @@ async def get_rlranks(username, message, platform, mode):
   except:
       return "No existen datos para estos modos de juego"
 
-async def get_all_rlranks(username, message, platform, platformid=0):
+async def get_all_rlranks(username, message, platform):
   mode = "competitive"
   rank1 = await get_rlranks(username, message, platform, mode)
   print("-------rank1--------")
