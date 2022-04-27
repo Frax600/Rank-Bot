@@ -4,11 +4,12 @@ import json
 import httpx
 import re
 from keep_alive import keep_alive
+import http.client
 
 
 
 platforms = ["steam", "epic", "psn", "xbl"]
-competitive_ranks = ["Ranked Duel 1v1", "Ranked Doubles 2v2", "Ranked Standard 3v3"]
+competitive_ranks = ["Ranked Duel 1v1", "Ranked Doubles 2v2", "Ranked Standard 3v3", "Tournament Matches"]
 extra_ranks = ["Hoops", "Rumble", "Dropshot", "Snowday"]
 error_messages = ["Error, inténtelo de nuevo más tarde", "No se encuentra el usuario", "No se han introducido datos", "Se ha producido un error en el servidor"]
 
@@ -25,19 +26,26 @@ async def get_rlranks(username, message, platform, mode):
   elif(platform == "l"):
     platform = "xbl"
   
-  clienthttp = httpx.AsyncClient(http2=True)
+  conn = http.client.HTTPSConnection("scrapeninja.p.rapidapi.com")
+  payload = "{\r\"url\": \"https://api.tracker.gg/api/v2/rocket-league/standard/profile/" + platform + "/" + username + "\"\r}"
   try:
     print("Plataforma: " + platform)
-    headers = {"Host": "api.tracker.gg", "User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:70.0) Gecko/20100101 Firefox/70.0", "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"}
-    response = await clienthttp.get('https://api.tracker.gg/api/v2/rocket-league/standard/profile/' + platform + "/" + username, headers=headers)
-    print("Version: " + response.http_version+
-         "\nError: " + str(response.status_code))
+    headers = {
+    'content-type': "application/json",
+    'X-RapidAPI-Host': "scrapeninja.p.rapidapi.com",
+    'X-RapidAPI-Key': "0acd66d402msh3145639099265a7p1497d5jsn68b5531f63fd"
+    }
+    conn.request("POST", "/scrape", payload, headers)
+
+    res = conn.getresponse()
+    data = res.read()
+
   except Exception as e:
     print(e)
     return "Error, inténtelo de nuevo más tarde"
-  print(response.text)
   try:
-    json_data = json.loads(response.text)
+    json_data = json.loads(data.decode("utf-8"))
+    json_data = json.loads(json_data["body"])
     print("---------JSON----------")
     print(json_data)
     print("--------JSONEND--------")
@@ -121,8 +129,9 @@ async def get_rlranks(username, message, platform, mode):
     else:
       ranks = "Plataforma: " + platform + "\n" + ranks
     return ranks
-  except:
-      return "No existen datos para estos modos de juego"
+  except Exception as e:
+    print(e)
+    return "No existen datos para estos modos de juego"
 
 async def get_all_rlranks(username, message, platform):
   mode = "competitive"
