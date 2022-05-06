@@ -5,13 +5,37 @@ import httpx
 import re
 from keep_alive import keep_alive
 import http.client
+import smtplib
 
-""""""
 
 platforms = ["steam", "epic", "psn", "xbl"]
 competitive_ranks = ["Ranked Duel 1v1", "Ranked Doubles 2v2", "Ranked Standard 3v3", "Tournament Matches"]
 extra_ranks = ["Hoops", "Rumble", "Dropshot", "Snowday"]
-error_messages = ["Error, inténtelo de nuevo más tarde", "No se encuentra el usuario", "No se han introducido datos", "Se ha producido un error en el servidor"]
+error_messages = ["Error, inténtelo de nuevo más tarde", "Si no tienes amigos en el", "No se encuentra el usuario", "No se han introducido datos", "Se ha producido un error en el servidor"]
+
+def send_error_mail(error="Error de prueba"):
+  try: 
+    #Create your SMTP session 
+    smtp = smtplib.SMTP('smtp.gmail.com', 587) 
+
+   #Use TLS to add security 
+    smtp.starttls() 
+
+    #User Authentication 
+    smtp.login(os.environ['SENDEREMAIL'],os.environ['EMAILPASSWORD'])
+
+    #Defining The Message 
+    message = error
+
+    #Sending the Email
+    smtp.sendmail(os.environ['SENDEREMAIL'], os.environ['RECEIVEREMAIL'],message) 
+
+    #Terminating the session 
+    smtp.quit() 
+    print ("Email sent successfully!") 
+
+  except Exception as ex: 
+    print("Something went wrong....",ex)
 
 async def get_rlranks(username, message, platform, mode):
   ranks = ""
@@ -54,6 +78,7 @@ async def get_rlranks(username, message, platform, mode):
   except Exception as e:
     print("Errooooooooor")
     print(e)
+    send_error_mail(str(e))
     return "Se ha producido un error en el servidor"
 
   try:
